@@ -9,11 +9,16 @@ def main():
     # Loads environment variables from .env file (where API key is stored)
     load_dotenv()
 
-    args = sys.argv[1:]
+    # New verbose flag detection (before processing args)
+    verbose = "--verbose" in sys.argv   # Checks if --verbose is anywhere in args
+    args = []
+    for arg in sys.argv[1:]:
+         if not arg.startswith("--"):   # Excludes all flag-style arguments
+            args.append(arg)            # Keeps only prompt parts
 
     if not args:
         print("AI Code Assistant")
-        print('\nUsage: python main.py "your prompt here"')
+        print('\nUsage: python main.py "your prompt here" [--verbose]')
         print('Example: python main.py "How do I build a calculator app?"')
         sys.exit(1)  
     
@@ -23,6 +28,10 @@ def main():
     client = genai.Client(api_key=api_key)
 
     user_prompt = " ".join(args)
+
+    # Verbose output for prompt
+    if verbose:
+        print(f"User prompt: {user_prompt}\n")    # Shows raw prompt
 
     # Create a message structure compatible with Gemini's chat API
     # Using types.Content ensures proper formatting of:
@@ -34,16 +43,19 @@ def main():
     ]
 
     # Pass the structured messages to our generation handler
-    generate_content(client, messages)
+    generate_content(client, messages, verbose)
 
 # Handles the actual Gemini API request with proper error boundaries
-def generate_content(client, messages):
+def generate_content(client, messages, verbose):
     # Make the actual API call
     response = client.models.generate_content(
         model="gemini-2.0-flash-001",   # Fast/cheap model for prototyping
         contents=messages,              # Our formatted conversation history
     )
-    
+    if verbose:     # New token counters
+        print("Prompt tokens:", response.usage_metadata.prompt_token_count)
+        print("Response tokens:", response.usage_metadata.candidates_token_count)  
+  
     # Prints the AI-generated response
     print("Response:")
     print(response.text)
