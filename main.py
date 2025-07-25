@@ -1,6 +1,7 @@
 import sys
 import os
 from google import genai
+from google.genai import types
 from dotenv import load_dotenv
 
 
@@ -14,24 +15,34 @@ def main():
         print("AI Code Assistant")
         print('\nUsage: python main.py "your prompt here"')
         print('Example: python main.py "How do I build a calculator app?"')
-        sys.exit(1)
-    user_prompt = " ".join(args)    
+        sys.exit(1)  
     
     # Retrieves the secret API key from environment variables
     api_key = os.environ.get("GEMINI_API_KEY")
-    
     # Initializes the Gemini client with your API key
     client = genai.Client(api_key=api_key)
-    
-    # Sends prompt to Gemini's flash model and gets response
+
+    user_prompt = " ".join(args)
+
+    # Create a message structure compatible with Gemini's chat API
+    # Using types.Content ensures proper formatting of:
+                                                        # - role ("user" for user input)
+                                                        # - parts (array of message components, here just text)
+    messages = [
+        types.Content(role="user",                # Identifies the message sender (user/assistant)
+        parts=[types.Part(text=user_prompt)]),    # Actual content payload
+    ]
+
+    # Pass the structured messages to our generation handler
+    generate_content(client, messages)
+
+# Handles the actual Gemini API request with proper error boundaries
+def generate_content(client, messages):
+    # Make the actual API call
     response = client.models.generate_content(
-        model="gemini-2.0-flash-001",  # Free-tier efficient model
-        contents=user_prompt,  # Your prompt
+        model="gemini-2.0-flash-001",   # Fast/cheap model for prototyping
+        contents=messages,              # Our formatted conversation history
     )
-    
-    # Debugging info - shows token usage (important for cost monitoring)
-    print("Prompt tokens:", response.usage_metadata.prompt_token_count)
-    print("Response tokens:", response.usage_metadata.candidates_token_count)
     
     # Prints the AI-generated response
     print("Response:")
