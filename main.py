@@ -4,6 +4,8 @@ from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 
+from prompts import system_prompt       # Import the system prompt
+
 
 def main():
     # Loads environment variables from .env file (where API key is stored)
@@ -19,7 +21,7 @@ def main():
     if not args:
         print("AI Code Assistant")
         print('\nUsage: python main.py "your prompt here" [--verbose]')
-        print('Example: python main.py "How do I build a calculator app?"')
+        print('Example: python main.py "How do I fix the calculator?"')
         sys.exit(1)  
     
     # Retrieves the secret API key from environment variables
@@ -51,6 +53,9 @@ def generate_content(client, messages, verbose):
     response = client.models.generate_content(
         model="gemini-2.0-flash-001",   # Fast/cheap model for prototyping
         contents=messages,              # Our formatted conversation history
+        config=types.GenerateContentConfig(
+            system_instruction=system_prompt    # Force AI behavior
+        ),
     )
     if verbose:     # New token counters
         print("Prompt tokens:", response.usage_metadata.prompt_token_count)
