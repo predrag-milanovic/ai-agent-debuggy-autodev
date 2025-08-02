@@ -3,8 +3,8 @@ import os
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
-
-from prompts import system_prompt       # Import the system prompt
+from prompts import system_prompt
+from call_function import available_functions
 
 
 def main():
@@ -54,7 +54,7 @@ def generate_content(client, messages, verbose):
         model="gemini-2.0-flash-001",   # Fast/cheap model for prototyping
         contents=messages,              # Our formatted conversation history
         config=types.GenerateContentConfig(
-            system_instruction=system_prompt    # Force AI behavior
+            tools=[available_functions], system_instruction=system_prompt    # Force AI behavior
         ),
     )
     if verbose:     # New token counters
@@ -62,9 +62,11 @@ def generate_content(client, messages, verbose):
         print("Response tokens:", response.usage_metadata.candidates_token_count)  
   
     # Prints the AI-generated response
-    print("Response:")
-    print(response.text)
-
+    if not response.function_calls:
+        return response.text
+    
+    for function_call_part in response.function_calls:
+        print(f"Calling function: {function_call_part.name}({function_call_part.args})")
 
 if __name__ == "__main__":
     main()  # Standard Python entry point
