@@ -5,6 +5,7 @@ from google.genai import types
 from dotenv import load_dotenv
 from prompts import system_prompt
 from call_function import call_function, available_functions
+from config import MAX_ITERS
 
 
 def main():
@@ -45,7 +46,21 @@ def main():
     ]
 
     # Pass the structured messages to our generation handler
-    generate_content(client, messages, verbose)
+    iters = 0
+    while True:     # NEW: Continuous agent loop
+        iters += 1
+        if iters > MAX_ITERS:       # Safety limit
+            print(f"Maximum iterations ({MAX_ITERS}) reached.")
+            sys.exit(1)
+
+        try:
+            final_response = generate_content(client, messages, verbose)
+            if final_response:      # Termination condition
+                print("Final response:")
+                print(final_response)
+                break
+        except Exception as e:      # Error handling
+            print(f"Error in generate_content: {e}")
 
 # Handles the actual Gemini API request with proper error boundaries
 def generate_content(client, messages, verbose):
@@ -59,12 +74,19 @@ def generate_content(client, messages, verbose):
     )
     if verbose:     # New token counters
         print("Prompt tokens:", response.usage_metadata.prompt_token_count)
-        print("Response tokens:", response.usage_metadata.candidates_token_count)  
+        print("Response tokens:", response.usage_metadata.candidates_token_count)
+
+    # Conversation history management
+    if response.candidates:
+        for candidate in response.candidates:
+            function_call_content = candidate.content
+            messages.append(function_call_content)      # Maintain context
   
     # Prints the AI-generated response
     if not response.function_calls:
         return response.text
     
+    # Tool response handling
     function_responses = []
     for function_call_part in response.function_calls:
         # Call the function handler
@@ -83,6 +105,11 @@ def generate_content(client, messages, verbose):
     # Final validation
     if not function_responses:
         raise Exception("no function responses generated, exiting.")
+    
+    messages.append(types.Content(  # Feedback loop
+        role="tool",
+        parts=function_responses
+    ))
 
 if __name__ == "__main__":
     main()  # Standard Python entry point
