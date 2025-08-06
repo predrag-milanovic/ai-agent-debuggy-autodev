@@ -1,4 +1,16 @@
-# ai-agent-debuggy-autodev
+# AI Code Assistant
+
+A CLI tool that uses Gemini AI to debug and fix Python code. It scans files, modifies code, and tests fixes autonomously.
+
+## Features
+
+- Accepts coding tasks via CLI
+- Uses Gemini API to reason and act
+- Can:
+  - Scan project files
+  - Read/write code
+  - Run Python scripts
+- Repeats actions until task is done or fails
 
 ## Requirements
 
