@@ -14,10 +14,7 @@ def main():
 
     # New verbose flag detection (before processing args)
     verbose = "--verbose" in sys.argv   # Checks if --verbose is anywhere in args
-    args = []
-    for arg in sys.argv[1:]:
-         if not arg.startswith("--"):   # Excludes all flag-style arguments
-            args.append(arg)            # Keeps only prompt parts
+    args = [arg for arg in sys.argv[1:] if not arg.startswith("--")]  # Excludes all flag-style arguments
 
     if not args:
         print("AI Code Assistant")

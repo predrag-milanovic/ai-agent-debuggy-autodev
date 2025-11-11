@@ -1,13 +1,13 @@
 import os
 from google.genai import types
+from functions.path_validator import validate_path
 
 def write_file(working_directory, file_path, content):
     # Convert paths to absolute form and validate containment
-    abs_working_dir = os.path.abspath(working_directory)
-    abs_file_path = os.path.abspath(os.path.join(working_directory, file_path))
-    # Security: Prevent directory traversal
-    if not abs_file_path.startswith(abs_working_dir):
-        return f'Error: Cannot write to "{file_path}" as it is outside the permitted working directory'
+    abs_working_dir, result = validate_path(working_directory, file_path)
+    if abs_working_dir is None:
+        return result  # Return error message
+    abs_file_path = result
     # Create parent directories if needed (for new files)
     if not os.path.exists(abs_file_path):
         try:

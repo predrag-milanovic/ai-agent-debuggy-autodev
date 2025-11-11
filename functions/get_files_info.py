@@ -1,25 +1,25 @@
 import os
 from google.genai import types
+from functions.path_validator import validate_path
 
 
 def get_files_info(working_directory, directory="."):   # Returns formatted directory contents with metadata as a string.
-    abs_working_dir = os.path.abspath(working_directory)                          # Convert paths to
-    target_dir = os.path.abspath(os.path.join(working_directory, directory))      # absolute form for security checks
-    if not target_dir.startswith(abs_working_dir):                                                      # Security: Prevent directory
-        return f'Error: Cannot list "{directory}" as it is outside the permitted working directory'     # traversal outside working directory
+    abs_working_dir, result = validate_path(working_directory, directory)
+    if abs_working_dir is None:
+        return result  # Return error message
+    target_dir = result
     if not os.path.isdir(target_dir):   # Validate target is actually a directory
         return f'Error: "{directory}" is not a directory'
     try:
         files_info = []
-        # List all entries in the target directory
-        for filename in os.listdir(target_dir):
-            filepath = os.path.join(target_dir, filename)
-            file_size = 0
-            is_dir = os.path.isdir(filepath)    # Get file metadata
-            file_size = os.path.getsize(filepath)
-            files_info.append(
-                f"- {filename}: file_size={file_size} bytes, is_dir={is_dir}"
-            )
+        # Use os.scandir for better performance
+        with os.scandir(target_dir) as entries:
+            for entry in entries:
+                is_dir = entry.is_dir()
+                file_size = 0 if is_dir else entry.stat().st_size
+                files_info.append(
+                    f"- {entry.name}: file_size={file_size} bytes, is_dir={is_dir}"
+                )
         return "\n".join(files_info)
     except Exception as e:
         return f"Error listing files: {e}"  # Catch all filesystem errors and return as string

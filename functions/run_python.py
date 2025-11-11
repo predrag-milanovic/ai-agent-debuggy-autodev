@@ -1,6 +1,8 @@
 import os
+import sys
 import subprocess
 from google.genai import types
+from functions.path_validator import validate_path
 
 
 """Execute Python file with security constraints and return output.
@@ -16,19 +18,18 @@ Returns:
 
 def run_python_file(working_directory, file_path, args=None):
     # SECURITY: Resolve absolute paths and validate containment
-    abs_working_dir = os.path.abspath(working_directory)
-    abs_file_path = os.path.abspath(os.path.join(working_directory, file_path))
-    # SECURITY: Prevent directory traversal attacks
-    if not abs_file_path.startswith(abs_working_dir):
-        return f'Error: Cannot execute "{file_path}" as it is outside the permitted working directory'
+    abs_working_dir, result = validate_path(working_directory, file_path)
+    if abs_working_dir is None:
+        return result  # Return error message
+    abs_file_path = result
     # Validate file existence and type
     if not os.path.exists(abs_file_path):
         return f'Error: File "{file_path}" not found.'
     if not file_path.endswith(".py"):
         return f'Error: "{file_path}" is not a Python file.'
     try:
-        # Prepare command with arguments
-        commands = ["python", abs_file_path]
+        # Prepare command with arguments - use sys.executable for current Python interpreter
+        commands = [sys.executable, abs_file_path]
         if args:
             commands.extend(args)   # Add any additional arguments
         # SAFE EXECUTION: Critical security parameters
